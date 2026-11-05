@@ -639,6 +639,24 @@ namespace WowVisionInstaller
                 KoreanLocale.ApplyFrom(new MemoryStream(zipBytes), addons);
                 Check("second run changes nothing", File.ReadAllText(Path.Combine(locale, "modules.xml")) == xml);
 
+                // A broken payload must fail loudly and leave the koKR already there.
+                byte[] broken;
+                using (var ms = new MemoryStream())
+                {
+                    using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                        using (var w = new StreamWriter(zip.CreateEntry("koKR/ui.lua").Open())) w.Write("-- no modules.xml");
+                    broken = ms.ToArray();
+                }
+                bool threw = false;
+                try { KoreanLocale.ApplyFrom(new MemoryStream(broken), addons); }
+                catch (InvalidOperationException) { threw = true; }
+                Check("broken payload throws", threw);
+                Check("broken payload keeps the previous koKR", File.Exists(Path.Combine(locale, "koKR", "modules.xml")));
+                Check("broken payload leaves no staging folder",
+                      !Directory.GetDirectories(locale, "koKR.new-*").Any());
+                Check("the failure line exists in every table",
+                      new[] { Lang.En, Lang.De, Lang.Fr, Lang.Ko }.All(l => Loc.Table(l).ContainsKey("status.koreanFailed")));
+
                 string empty = Path.Combine(root, "Empty");
                 Directory.CreateDirectory(empty);
                 Check("no WowVision: nothing done", !KoreanLocale.ApplyFrom(new MemoryStream(zipBytes), empty) && !Directory.Exists(Path.Combine(empty, "WowVision")));
