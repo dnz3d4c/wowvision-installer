@@ -601,7 +601,7 @@ namespace WowVisionInstaller
         {
             Console.WriteLine("=== loc: three tables, one key set ===");
             var en = Loc.Table(Lang.En);
-            foreach (var lang in new[] { Lang.De, Lang.Fr })
+            foreach (var lang in new[] { Lang.De, Lang.Fr, Lang.Ko })
             {
                 var t = Loc.Table(lang);
                 var missing = en.Keys.Except(t.Keys).ToList();
@@ -617,7 +617,7 @@ namespace WowVisionInstaller
 
             var args = Enumerable.Range(0, 10).Select(i => (object)("x" + i)).ToArray();
             var broken = new List<string>();
-            foreach (var lang in new[] { Lang.En, Lang.De, Lang.Fr })
+            foreach (var lang in new[] { Lang.En, Lang.De, Lang.Fr, Lang.Ko })
                 foreach (var kv in Loc.Table(lang))
                     try { string.Format(kv.Value, args); }
                     catch { broken.Add($"{lang}:{kv.Key}"); }
