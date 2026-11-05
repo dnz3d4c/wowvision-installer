@@ -55,6 +55,12 @@
     <Compile Include="..\WowVisionInstaller\LogCollector.cs"           Link="LogCollector.cs" />
     <Compile Include="..\WowVisionInstaller\ManagedAddons.cs"          Link="ManagedAddons.cs" />
     <Compile Include="..\WowVisionInstaller\LoginToolInstaller.cs"     Link="LoginToolInstaller.cs" />
-  </ItemGroup>
+    <Compile Include="..\WowVisionInstaller\KoreanLocale.cs"           Link="KoreanLocale.cs" />
+    </ItemGroup>
+
+  <!-- the koKR payload, so the kolocale test checks what the installer ships -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\WowVisionInstaller\payload\koKR.zip" Link="payload\koKR.zip" />
+</ItemGroup>
 
 </Project>

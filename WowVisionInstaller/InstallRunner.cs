@@ -295,6 +295,13 @@ namespace WowVisionInstaller
                         }
                     }
 
+                    // Korean test builds: put koKR back after the release copy
+                    // (which has none) — on every run, since an update replaces the
+                    // whole WowVision folder. A failure here is logged, not fatal:
+                    // WowVision itself is installed and works in English.
+                    try { KoreanLocale.Apply(r.Target.AddOnsPath); }
+                    catch (Exception ex) { Logger.Error("Korean locale overlay failed", ex); }
+
                     if (_options.InstallLoginTool && LoginToolInstaller.ClientSupported(r.Target.Product))
                     {
                         SayScoped(Loc.Format("status.loginTool", r.Target.DisplayName), true);

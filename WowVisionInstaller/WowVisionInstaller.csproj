@@ -84,6 +84,9 @@
          v2\START.ahk driver. Deployed at runtime by LoginToolInstaller. -->
     <EmbeddedResource Include="payload\AutoHotkey64_v2.exe" />
     <EmbeddedResource Include="payload\AutoHotkey-license.txt" />
+    <!-- Korean test builds: the koKR strings, written into WowVision\locale
+         after every install by KoreanLocale (the release has no koKR yet). -->
+    <EmbeddedResource Include="payload\koKR.zip" />
   </ItemGroup>
 
 </Project>

@@ -48,6 +48,7 @@ namespace WowVisionInstaller
                 case "versiontest":     RunVersionTest(); break;
                 case "pathmemory":      RunPathMemoryTest(); break;
                 case "loc":             RunLocTest(); break;
+                case "kolocale":        RunKoLocaleTest(); break;
                 case "logtest":         RunLogTest(); break;
                 case "resolve":         RunResolve(); break;
                 case "fullinstall":     RunFullInstall(); break;
@@ -66,7 +67,7 @@ namespace WowVisionInstaller
                     // Everything that needs no network, in one go.
                     RunClientTest(); RunTocTest(); RunVersionTest(); RunPathMemoryTest();
                     RunLocTest(); RunLogTest(); RunAvailabilityTest(); RunTextureSweepTest();
-                    RunCurseTest();
+                    RunCurseTest(); RunKoLocaleTest();
                     break;
                 default:
                     Console.WriteLine("WowVisionSelfTest commands:");
@@ -597,6 +598,61 @@ namespace WowVisionInstaller
             }
         }
 
+        // ── Korean locale overlay (Korean test builds) ───────────────────────
+        private static void RunKoLocaleTest()
+        {
+            Console.WriteLine("=== kolocale: koKR overlay after the release is installed ===");
+            const string upstreamXml = "<Ui>\n\n  <Include file=\"enUS/modules.xml\" />\n  <Include file=\"deDE/modules.xml\" />\n  <Include file=\"frFR/modules.xml\" />\n\n</Ui>";
+            string once = KoreanLocale.AddInclude(upstreamXml);
+            Check("include line added once", once.Split(new[] { KoreanLocale.IncludeLine }, StringSplitOptions.None).Length == 2);
+            Check("include line after the last include", once.IndexOf("frFR") < once.IndexOf(KoreanLocale.IncludeLine) && once.IndexOf(KoreanLocale.IncludeLine) < once.IndexOf("</Ui>"));
+            Check("include is idempotent", KoreanLocale.AddInclude(once) == once);
+            // The packaged release has Windows line endings (the packager's default).
+            string crlf = KoreanLocale.AddInclude(upstreamXml.Replace("\n", "\r\n"));
+            Check("CRLF file: include line added", crlf.Contains("frFR/modules.xml\" />\r\n  " + KoreanLocale.IncludeLine + "\r\n"));
+
+            string root = Path.Combine(Path.GetTempPath(), "wv-kotest-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string addons = Path.Combine(root, "AddOns");
+                string locale = Path.Combine(addons, "WowVision", "locale");
+                Directory.CreateDirectory(Path.Combine(locale, "koKR"));
+                File.WriteAllText(Path.Combine(locale, "modules.xml"), upstreamXml);
+                File.WriteAllText(Path.Combine(locale, "koKR", "stale.lua"), "old");
+
+                byte[] zipBytes;
+                using (var ms = new MemoryStream())
+                {
+                    using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                    {
+                        foreach (var name in new[] { "koKR/modules.xml", "koKR/ui.lua" })
+                            using (var w = new StreamWriter(zip.CreateEntry(name).Open())) w.Write("-- " + name);
+                    }
+                    zipBytes = ms.ToArray();
+                }
+
+                Check("applied to an installed WowVision", KoreanLocale.ApplyFrom(new MemoryStream(zipBytes), addons));
+                Check("koKR files written", File.Exists(Path.Combine(locale, "koKR", "ui.lua")) && File.Exists(Path.Combine(locale, "koKR", "modules.xml")));
+                Check("old koKR files removed", !File.Exists(Path.Combine(locale, "koKR", "stale.lua")));
+                string xml = File.ReadAllText(Path.Combine(locale, "modules.xml"));
+                Check("locale/modules.xml includes koKR", xml.Contains(KoreanLocale.IncludeLine));
+                KoreanLocale.ApplyFrom(new MemoryStream(zipBytes), addons);
+                Check("second run changes nothing", File.ReadAllText(Path.Combine(locale, "modules.xml")) == xml);
+
+                string empty = Path.Combine(root, "Empty");
+                Directory.CreateDirectory(empty);
+                Check("no WowVision: nothing done", !KoreanLocale.ApplyFrom(new MemoryStream(zipBytes), empty) && !Directory.Exists(Path.Combine(empty, "WowVision")));
+            }
+            finally { try { Directory.Delete(root, true); } catch { } }
+
+            using (var payload = KoreanLocale.OpenPayload())
+            using (var zip = new ZipArchive(payload, ZipArchiveMode.Read))
+            {
+                Check("payload embedded with koKR/modules.xml", zip.GetEntry("koKR/modules.xml") != null);
+                Check("payload has Lua files", zip.Entries.Count(e => e.FullName.StartsWith("koKR/") && e.FullName.EndsWith(".lua")) > 0);
+            }
+        }
+
         private static void RunLocTest()
         {
             Console.WriteLine("=== loc: three tables, one key set ===");
@@ -1066,6 +1122,10 @@ namespace WowVisionInstaller
                 Check($"{t.ShortName}: manifest records {tag}",
                       InstallManifest.Load(t.AddOnsPath).GetTag(Config.PrimaryFolder) == tag);
                 Check($"{t.ShortName}: game settings written", GameSettings.CheckNeeded(t.AddOnsPath).Count == 0);
+                string locale = Path.Combine(t.AddOnsPath, Config.PrimaryFolder, "locale");
+                Check($"{t.ShortName}: koKR written over the release",
+                      File.Exists(Path.Combine(locale, "koKR", "modules.xml")) &&
+                      File.ReadAllText(Path.Combine(locale, "modules.xml")).Contains(KoreanLocale.IncludeLine));
             }
         }
 
