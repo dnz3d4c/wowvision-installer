@@ -884,7 +884,7 @@ namespace WowVisionInstaller
             // ── per-client status lines (InstallTarget.StatusLine) ───────────
             // State first, version numbers after — heard aloud, the state is what
             // the user is listening for.
-            ["target.notFound"]        = "이 컴퓨터에서 찾지 못함 — 그래도 체크하고 다음 단계에서 위치를 지정하십시오.",
+            ["target.notFound"]        = "이 컴퓨터에서 찾지 못함 — 그래도 체크하면 다음 단계에서 폴더를 고를 수 있음.",
             ["target.freshInstall"]    = "새로 설치 — 여기에 WowVision {0} 설치 예정.",
             ["target.movedFromBeta"]   = "베타 종료 후 새 폴더 — 여기에 WowVision {0} 설치 예정.",
             ["target.upToDate"]        = "최신 상태 — WowVision {0} 설치됨.",
