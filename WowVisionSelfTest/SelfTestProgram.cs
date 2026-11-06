@@ -602,6 +602,10 @@ namespace WowVisionInstaller
         private static void RunKoLocaleTest()
         {
             Console.WriteLine("=== kolocale: koKR overlay after the release is installed ===");
+            // Korean build: the NVDA bridge is part of every install path
+            // (components page, Install now, Update now), not opt-in.
+            Check("NVDA bridge ticked by default", new InstallOptions().InstallSapi2Sr);
+            Check("Windows voices still opt-in", !new InstallOptions().InstallWindowsVoices);
             const string upstreamXml = "<Ui>\n\n  <Include file=\"enUS/modules.xml\" />\n  <Include file=\"deDE/modules.xml\" />\n  <Include file=\"frFR/modules.xml\" />\n\n</Ui>";
             string once = KoreanLocale.AddInclude(upstreamXml);
             Check("include line added once", once.Split(new[] { KoreanLocale.IncludeLine }, StringSplitOptions.None).Length == 2);

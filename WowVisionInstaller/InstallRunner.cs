@@ -11,14 +11,15 @@ namespace WowVisionInstaller
     {
         public bool DesktopShortcut = true;
         /// <summary>
-        /// The two voice steps are off unless ticked on the components page: the
-        /// bridge registers a voice and signs its engine machine-wide, the Windows
-        /// voices step adds voices to the machine's SAPI list. Both change what
-        /// every SAPI program offers (and can shift the game's voice numbers).
-        /// Nobody should get that without choosing it, and "Update now" (which
-        /// runs on these defaults) never does either.
+        /// The Windows voices step is off unless ticked on the components page:
+        /// it adds voices to the machine's SAPI list, which changes what every
+        /// SAPI program offers (and can shift the game's voice numbers).
+        /// Korean build: the NVDA bridge is on by default, so every path
+        /// (components page, "Install now", "Update now") installs it. Korean
+        /// testers use NVDA; without the bridge WowVision speaks with a Windows
+        /// voice instead. It can still be unticked on the components page.
         /// </summary>
-        public bool InstallSapi2Sr = false;
+        public bool InstallSapi2Sr = true;
         public bool InstallWindowsVoices = false;
         public bool InstallLoginTool = true;
 
