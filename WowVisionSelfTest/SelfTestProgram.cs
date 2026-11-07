@@ -49,6 +49,7 @@ namespace WowVisionInstaller
                 case "pathmemory":      RunPathMemoryTest(); break;
                 case "loc":             RunLocTest(); break;
                 case "kolocale":        RunKoLocaleTest(); break;
+                case "kovoice":         RunKoVoiceTest(); break;
                 case "logtest":         RunLogTest(); break;
                 case "resolve":         RunResolve(); break;
                 case "fullinstall":     RunFullInstall(); break;
@@ -67,7 +68,7 @@ namespace WowVisionInstaller
                     // Everything that needs no network, in one go.
                     RunClientTest(); RunTocTest(); RunVersionTest(); RunPathMemoryTest();
                     RunLocTest(); RunLogTest(); RunAvailabilityTest(); RunTextureSweepTest();
-                    RunCurseTest(); RunKoLocaleTest();
+                    RunCurseTest(); RunKoLocaleTest(); RunKoVoiceTest();
                     break;
                 default:
                     Console.WriteLine("WowVisionSelfTest commands:");
@@ -675,6 +676,83 @@ namespace WowVisionInstaller
             }
         }
 
+        // ── Korean voice pack (Korean test builds) ───────────────────────────
+        private static void RunKoVoiceTest()
+        {
+            Console.WriteLine("=== kovoice: Yuna voice pack after the release is installed ===");
+            // The release's audio\voice.lua, as packaged (CRLF, no newline at the end).
+            const string upstreamLua =
+                "WowVision.audio:registerVoicePack({\r\n    key = \"Matthew\",\r\n    label = \"Matthew\",\r\n    filePath = \"Interface/AddOns/WowVision/audio/voice/Matthew\",\r\n})\r\n\r\n" +
+                "WowVision.audio:registerVoicePack({\r\n    key = \"Joanna\",\r\n    label = \"Joanna\",\r\n    filePath = \"Interface/AddOns/WowVision/audio/voice/Joanna\",\r\n})";
+            string once = KoreanVoice.AddRegistration(upstreamLua);
+            Check("registration added once", once.Split(new[] { KoreanVoice.RegisterLine }, StringSplitOptions.None).Length == 2);
+            Check("registration after the release's packs", once.IndexOf("Joanna") < once.IndexOf(KoreanVoice.RegisterLine));
+            Check("registration on its own line", once.Contains("})\r\n" + KoreanVoice.RegisterLine));
+            Check("registration is idempotent", KoreanVoice.AddRegistration(once) == once);
+            Check("LF file: registration on its own line", KoreanVoice.AddRegistration("x\n").EndsWith("x\n" + KoreanVoice.RegisterLine + "\n"));
+
+            string root = Path.Combine(Path.GetTempPath(), "wv-kovoice-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string addons = Path.Combine(root, "AddOns");
+                string audio = Path.Combine(addons, "WowVision", "audio");
+                string pack = Path.Combine(audio, "voice", "Yuna");
+                Directory.CreateDirectory(pack);
+                File.WriteAllText(Path.Combine(audio, "voice.lua"), upstreamLua);
+                File.WriteAllText(Path.Combine(pack, "stale.mp3"), "old");
+
+                byte[] zipBytes;
+                using (var ms = new MemoryStream())
+                {
+                    using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                    {
+                        foreach (var name in new[] { "Yuna/directions/east.mp3", "Yuna/numbers/1.mp3" })
+                            using (var w = new StreamWriter(zip.CreateEntry(name).Open())) w.Write(name);
+                    }
+                    zipBytes = ms.ToArray();
+                }
+
+                Check("applied to an installed WowVision", KoreanVoice.ApplyFrom(new MemoryStream(zipBytes), addons));
+                Check("voice files written", File.Exists(Path.Combine(pack, "directions", "east.mp3")) && File.Exists(Path.Combine(pack, "numbers", "1.mp3")));
+                Check("old voice files removed", !File.Exists(Path.Combine(pack, "stale.mp3")));
+                string lua = File.ReadAllText(Path.Combine(audio, "voice.lua"));
+                Check("voice.lua registers Yuna", lua.Contains(KoreanVoice.RegisterLine));
+                Check("voice.lua keeps the release's packs", lua.Contains("audio/voice/Matthew") && lua.Contains("audio/voice/Joanna"));
+                KoreanVoice.ApplyFrom(new MemoryStream(zipBytes), addons);
+                Check("second run changes nothing", File.ReadAllText(Path.Combine(audio, "voice.lua")) == lua);
+
+                // A broken payload must fail loudly and leave the pack already there.
+                byte[] broken;
+                using (var ms = new MemoryStream())
+                {
+                    using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                        using (var w = new StreamWriter(zip.CreateEntry("Yuna/numbers/1.mp3").Open())) w.Write("no directions");
+                    broken = ms.ToArray();
+                }
+                bool threw = false;
+                try { KoreanVoice.ApplyFrom(new MemoryStream(broken), addons); }
+                catch (InvalidOperationException) { threw = true; }
+                Check("broken payload throws", threw);
+                Check("broken payload keeps the previous pack", File.Exists(Path.Combine(pack, "directions", "east.mp3")));
+                Check("broken payload leaves no staging folder",
+                      !Directory.GetDirectories(Path.Combine(audio, "voice"), "Yuna.new-*").Any());
+                Check("the failure line exists in every table",
+                      new[] { Lang.En, Lang.De, Lang.Fr, Lang.Ko }.All(l => Loc.Table(l).ContainsKey("status.koreanVoiceFailed")));
+
+                string empty = Path.Combine(root, "Empty");
+                Directory.CreateDirectory(empty);
+                Check("no WowVision: nothing done", !KoreanVoice.ApplyFrom(new MemoryStream(zipBytes), empty) && !Directory.Exists(Path.Combine(empty, "WowVision")));
+            }
+            finally { try { Directory.Delete(root, true); } catch { } }
+
+            using (var payload = KoreanVoice.OpenPayload())
+            using (var zip = new ZipArchive(payload, ZipArchiveMode.Read))
+            {
+                Check("payload has the 8 directions", zip.Entries.Count(e => e.FullName.StartsWith("Yuna/directions/") && e.FullName.EndsWith(".mp3")) == 8);
+                Check("payload has numbers 1 to 100", Enumerable.Range(1, 100).All(i => zip.GetEntry($"Yuna/numbers/{i}.mp3") != null));
+            }
+        }
+
         private static void RunLocTest()
         {
             Console.WriteLine("=== loc: three tables, one key set ===");
@@ -1148,6 +1226,10 @@ namespace WowVisionInstaller
                 Check($"{t.ShortName}: koKR written over the release",
                       File.Exists(Path.Combine(locale, "koKR", "modules.xml")) &&
                       File.ReadAllText(Path.Combine(locale, "modules.xml")).Contains(KoreanLocale.IncludeLine));
+                string audio = Path.Combine(t.AddOnsPath, Config.PrimaryFolder, "audio");
+                Check($"{t.ShortName}: Yuna voice pack written over the release",
+                      File.Exists(Path.Combine(audio, "voice", "Yuna", "directions", "east.mp3")) &&
+                      File.ReadAllText(Path.Combine(audio, "voice.lua")).Contains(KoreanVoice.RegisterLine));
             }
         }
 

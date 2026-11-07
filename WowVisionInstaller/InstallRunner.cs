@@ -307,6 +307,16 @@ namespace WowVisionInstaller
                         Logger.Error("Korean locale overlay failed", ex);
                         SayScoped(Loc.Format("status.koreanFailed", ex.Message), true);
                     }
+                    // Same for the Korean voice pack (Yuna): the release has English
+                    // packs only. If it fails after an update, the Yuna folder and its
+                    // registration are gone and alerts set to Yuna play nothing (an
+                    // unregistered pack path resolves to no file), so the line says so.
+                    try { KoreanVoice.Apply(r.Target.AddOnsPath); }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Korean voice pack overlay failed", ex);
+                        SayScoped(Loc.Format("status.koreanVoiceFailed", ex.Message), true);
+                    }
 
                     if (_options.InstallLoginTool && LoginToolInstaller.ClientSupported(r.Target.Product))
                     {
