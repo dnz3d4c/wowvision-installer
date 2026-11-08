@@ -50,6 +50,7 @@ namespace WowVisionInstaller
                 case "loc":             RunLocTest(); break;
                 case "kolocale":        RunKoLocaleTest(); break;
                 case "kovoice":         RunKoVoiceTest(); break;
+                case "kologintool":     RunKoLoginToolTest(); break;
                 case "logtest":         RunLogTest(); break;
                 case "resolve":         RunResolve(); break;
                 case "fullinstall":     RunFullInstall(); break;
@@ -68,7 +69,7 @@ namespace WowVisionInstaller
                     // Everything that needs no network, in one go.
                     RunClientTest(); RunTocTest(); RunVersionTest(); RunPathMemoryTest();
                     RunLocTest(); RunLogTest(); RunAvailabilityTest(); RunTextureSweepTest();
-                    RunCurseTest(); RunKoLocaleTest(); RunKoVoiceTest();
+                    RunCurseTest(); RunKoLocaleTest(); RunKoVoiceTest(); RunKoLoginToolTest();
                     break;
                 default:
                     Console.WriteLine("WowVisionSelfTest commands:");
@@ -753,6 +754,72 @@ namespace WowVisionInstaller
             }
         }
 
+        private static void RunKoLoginToolTest()
+        {
+            Console.WriteLine("=== kologintool: Korean WoW Login Tool files after the release is installed ===");
+            Func<Dictionary<string, string>, byte[]> makeZip = files =>
+            {
+                using (var ms = new MemoryStream())
+                {
+                    using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                        foreach (var f in files)
+                            using (var w = new StreamWriter(zip.CreateEntry(f.Key).Open())) w.Write(f.Value);
+                    return ms.ToArray();
+                }
+            };
+            string root = Path.Combine(Path.GetTempPath(), "wv-kologintool-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string tool = Path.Combine(root, "WoW Login Tool");
+                Directory.CreateDirectory(Path.Combine(tool, "v2"));
+                Directory.CreateDirectory(Path.Combine(tool, "data", "localization"));
+                File.WriteAllText(Path.Combine(tool, "v2", "START.ahk"), "upstream");
+                File.WriteAllText(Path.Combine(tool, "data", "settings.ini"), "user");
+                File.WriteAllText(Path.Combine(tool, "data", "localization", "enEN.txt"), "en");
+                byte[] good = makeZip(new Dictionary<string, string> {
+                    ["v2/START.ahk"] = "ko start", ["data/localization/koKR.txt"] = "ko",
+                    ["helper/SkuLoginSense.exe"] = "exe", ["data/settings.ini"] = "payload settings" });
+
+                Check("applied to an installed login tool", KoreanLoginTool.ApplyFrom(new MemoryStream(good), tool));
+                Check("Korean files written", File.ReadAllText(Path.Combine(tool, "v2", "START.ahk")) == "ko start"
+                      && File.Exists(Path.Combine(tool, "data", "localization", "koKR.txt"))
+                      && File.Exists(Path.Combine(tool, "helper", "SkuLoginSense.exe")));
+                Check("user settings.ini never overwritten", File.ReadAllText(Path.Combine(tool, "data", "settings.ini")) == "user");
+                Check("files not in the payload kept", File.ReadAllText(Path.Combine(tool, "data", "localization", "enEN.txt")) == "en");
+                Check("second run gives the same files", KoreanLoginTool.ApplyFrom(new MemoryStream(good), tool)
+                      && File.ReadAllText(Path.Combine(tool, "v2", "START.ahk")) == "ko start");
+
+                // A payload without the Korean strings, or with a path outside the tool
+                // folder, must fail before writing anything.
+                foreach (var bad in new[] {
+                    new Dictionary<string, string> { ["v2/START.ahk"] = "broken" },
+                    new Dictionary<string, string> { ["data/localization/koKR.txt"] = "ko", ["v2/START.ahk"] = "broken", ["../escape.txt"] = "x" } })
+                {
+                    bool threw = false;
+                    try { KoreanLoginTool.ApplyFrom(new MemoryStream(makeZip(bad)), tool); }
+                    catch (InvalidOperationException) { threw = true; }
+                    Check("bad payload throws (" + string.Join(",", bad.Keys) + ")", threw);
+                    Check("bad payload writes nothing", File.ReadAllText(Path.Combine(tool, "v2", "START.ahk")) == "ko start");
+                }
+                Check("nothing written outside the tool folder", !File.Exists(Path.Combine(root, "escape.txt")));
+
+                string empty = Path.Combine(root, "NoTool");
+                Check("no login tool: nothing done", !KoreanLoginTool.ApplyFrom(new MemoryStream(good), empty) && !Directory.Exists(empty));
+                Check("the failure line exists in every table",
+                      new[] { Lang.En, Lang.De, Lang.Fr, Lang.Ko }.All(l => Loc.Table(l).ContainsKey("status.koreanLoginToolFailed")));
+            }
+            finally { try { Directory.Delete(root, true); } catch { } }
+
+            using (var payload = KoreanLoginTool.OpenPayload())
+            using (var zip = new ZipArchive(payload, ZipArchiveMode.Read))
+            {
+                Check("payload has the Korean strings", zip.GetEntry("data/localization/koKR.txt") != null);
+                Check("payload has the rebuilt helper", zip.GetEntry("helper/SkuLoginSense.exe") != null);
+                Check("payload has the driver", zip.GetEntry("v2/START.ahk") != null);
+                Check("payload carries no user settings", zip.GetEntry("data/settings.ini") == null);
+            }
+        }
+
         private static void RunLocTest()
         {
             Console.WriteLine("=== loc: three tables, one key set ===");
@@ -1054,6 +1121,21 @@ namespace WowVisionInstaller
                     Check("no textures in any other client",
                           wow.FlavorDir.Where(kv => kv.Key != product).All(kv =>
                               !File.Exists(Path.Combine(kv.Value, "Interface", LoginToolInstaller.FiducialMarkerRelPath))));
+
+                    // Korean test builds: InstallRunner writes the Korean files right after this step.
+                    string settings = Path.Combine(toolDir, "data", "settings.ini");
+                    byte[] releaseSettings = File.Exists(settings) ? File.ReadAllBytes(settings) : null;
+                    Check("Korean login tool files applied over the release", KoreanLoginTool.Apply(addons));
+                    Check("koKR strings in the installed tool", File.Exists(Path.Combine(toolDir, "data", "localization", "koKR.txt")));
+                    using (var payload = KoreanLoginTool.OpenPayload())
+                    using (var zip = new ZipArchive(payload, ZipArchiveMode.Read))
+                    {
+                        var forever = zip.GetEntry("v2/includes/forever.ahk");
+                        using (var ms = new MemoryStream()) { using (var st = forever.Open()) st.CopyTo(ms);
+                            Check("installed driver is the Korean one", ms.ToArray().SequenceEqual(File.ReadAllBytes(Path.Combine(toolDir, "v2", "includes", "forever.ahk")))); }
+                    }
+                    Check("release settings.ini untouched", releaseSettings == null || releaseSettings.SequenceEqual(File.ReadAllBytes(settings)));
+                    Check("release textures stay", !LoginToolInstaller.ClientNeedsTextures(product) || File.Exists(marker));
                 }
                 finally { LoginToolInstaller.SkipShortcut = false; }
             }

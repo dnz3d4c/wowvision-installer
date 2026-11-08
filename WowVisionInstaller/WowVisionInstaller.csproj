@@ -90,6 +90,9 @@
     <!-- Korean test builds: the Yuna voice pack, written into WowVision\audio\voice
          after every install by KoreanVoice (the release has English packs only). -->
     <EmbeddedResource Include="payload\koVoice.zip" />
+    <!-- Korean test builds: the Korean WoW Login Tool files (Sku-WoW-Addon-TBC ko
+         branch), written over the released tool after every run by KoreanLoginTool. -->
+    <EmbeddedResource Include="payload\koLoginTool.zip" />
   </ItemGroup>
 
 </Project>

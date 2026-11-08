@@ -57,12 +57,14 @@
     <Compile Include="..\WowVisionInstaller\LoginToolInstaller.cs"     Link="LoginToolInstaller.cs" />
     <Compile Include="..\WowVisionInstaller\KoreanLocale.cs"           Link="KoreanLocale.cs" />
     <Compile Include="..\WowVisionInstaller\KoreanVoice.cs"            Link="KoreanVoice.cs" />
+    <Compile Include="..\WowVisionInstaller\KoreanLoginTool.cs"        Link="KoreanLoginTool.cs" />
     </ItemGroup>
 
   <!-- the koKR and voice payloads, so the kolocale and kovoice tests check what the installer ships -->
   <ItemGroup>
     <EmbeddedResource Include="..\WowVisionInstaller\payload\koKR.zip" Link="payload\koKR.zip" />
     <EmbeddedResource Include="..\WowVisionInstaller\payload\koVoice.zip" Link="payload\koVoice.zip" />
+    <EmbeddedResource Include="..\WowVisionInstaller\payload\koLoginTool.zip" Link="payload\koLoginTool.zip" />
 </ItemGroup>
 
 </Project>

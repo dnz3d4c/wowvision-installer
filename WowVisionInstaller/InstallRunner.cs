@@ -323,6 +323,15 @@ namespace WowVisionInstaller
                         SayScoped(Loc.Format("status.loginTool", r.Target.DisplayName), true);
                         LoginToolInstaller.Install(r.Target.AddOnsPath, _github,
                                                    m => SayScoped(m), _options.Force, r.Target.Product);
+                        // Korean test builds: the Korean login tool files go over the
+                        // release on every run (the step above skips a current tool).
+                        // A failure is said aloud; the tool still works as released.
+                        try { KoreanLoginTool.Apply(r.Target.AddOnsPath); }
+                        catch (Exception ex)
+                        {
+                            Logger.Error("Korean login tool overlay failed", ex);
+                            SayScoped(Loc.Format("status.koreanLoginToolFailed", ex.Message), true);
+                        }
                     }
 
                     manifest.Save(r.Target.AddOnsPath);
