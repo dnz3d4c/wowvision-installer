@@ -81,9 +81,9 @@ namespace WowVisionInstaller
 
         // ── which WowVision: stable release or beta ─────────────────────────
         // One decision for every game version, made on the components page and
-        // remembered (ChannelPrefs). Stable is preselected; a choice already
+        // remembered (ChannelPrefs). ko tester build: the beta is preselected; a choice already
         // remembered stays as it is.
-        public const Channel DefaultChannel = Channel.Stable;
+        public const Channel DefaultChannel = Channel.Beta;
 
         /// <summary>The channel this run works with (set from ChannelPrefs at startup).</summary>
         public static Channel CurrentChannel { get; private set; } = DefaultChannel;

@@ -497,7 +497,8 @@ namespace WowVisionInstaller
                 Check("beta survives a reload", ChannelPrefs.Load() == Channel.Beta);
             }
             finally { ChannelPrefs.DirOverride = null; try { Directory.Delete(store, true); } catch { } }
-            Check("stable is preselected", Config.DefaultChannel == Channel.Stable);
+            // ko tester build: the beta (upstream main) is preselected.
+            Check("beta is preselected", Config.DefaultChannel == Channel.Beta);
 
             Console.WriteLine("=== side files of a self-update ===");
             Check("the updater keeps its names",
