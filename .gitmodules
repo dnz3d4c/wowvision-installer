@@ -1,0 +1,3 @@
+[submodule "korean"]
+	path = korean
+	url = https://github.com/dnz3d4c/wowvision-korean.git

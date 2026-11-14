@@ -382,6 +382,9 @@ namespace WowVisionInstaller
                 Say(Loc.Get("status.sapi2sr"), true);
                 try { Sapi2SrInstaller.Install(m => Say(m)); }
                 catch (Exception ex) { Logger.Error("SAPI2SR install failed", ex); Say(ex.Message); }
+                // Korean test builds: the Sense Reader proxy goes over the bridge's
+                // nvdaControllerClient.dll, which the step above just put back.
+                KoreanSenseReader.Install(m => Say(m));
             }
             if (_options.InstallWindowsVoices)
             {

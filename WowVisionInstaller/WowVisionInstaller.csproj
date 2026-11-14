@@ -93,6 +93,15 @@
     <!-- Korean test builds: the Korean WoW Login Tool files (Sku-WoW-Addon-TBC ko
          branch), written over the released tool after every run by KoreanLoginTool. -->
     <EmbeddedResource Include="payload\koLoginTool.zip" />
+    <!-- Korean test builds: the Sense Reader proxy for the SAPI2SR bridge and its
+         signing script, put in place after the bridge by KoreanSenseReader. -->
+    <EmbeddedResource Include="payload\koSenseReader.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Korean-only features live in the korean submodule (dnz3d4c/wowvision-korean);
+         KoreanSenseReaderTest.cs is the self-test's and stays out of the installer. -->
+    <Compile Include="..\korean\installer\*.cs" Exclude="..\korean\installer\*Test.cs" LinkBase="korean" />
   </ItemGroup>
 
 </Project>

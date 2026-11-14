@@ -58,6 +58,8 @@
     <Compile Include="..\WowVisionInstaller\KoreanLocale.cs"           Link="KoreanLocale.cs" />
     <Compile Include="..\WowVisionInstaller\KoreanVoice.cs"            Link="KoreanVoice.cs" />
     <Compile Include="..\WowVisionInstaller\KoreanLoginTool.cs"        Link="KoreanLoginTool.cs" />
+    <!-- Korean-only features live in the korean submodule (dnz3d4c/wowvision-korean). -->
+    <Compile Include="..\korean\installer\*.cs" LinkBase="korean" />
     </ItemGroup>
 
   <!-- the koKR and voice payloads, so the kolocale and kovoice tests check what the installer ships -->
@@ -65,6 +67,7 @@
     <EmbeddedResource Include="..\WowVisionInstaller\payload\koKR.zip" Link="payload\koKR.zip" />
     <EmbeddedResource Include="..\WowVisionInstaller\payload\koVoice.zip" Link="payload\koVoice.zip" />
     <EmbeddedResource Include="..\WowVisionInstaller\payload\koLoginTool.zip" Link="payload\koLoginTool.zip" />
+    <EmbeddedResource Include="..\WowVisionInstaller\payload\koSenseReader.zip" Link="payload\koSenseReader.zip" />
 </ItemGroup>
 
 </Project>

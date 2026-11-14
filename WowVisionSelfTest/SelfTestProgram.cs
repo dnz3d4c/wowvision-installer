@@ -51,6 +51,7 @@ namespace WowVisionInstaller
                 case "kolocale":        RunKoLocaleTest(); break;
                 case "kovoice":         RunKoVoiceTest(); break;
                 case "kologintool":     RunKoLoginToolTest(); break;
+                case "kosensereader":   KoreanSenseReaderTest.Run(Check); break;
                 case "logtest":         RunLogTest(); break;
                 case "resolve":         RunResolve(); break;
                 case "fullinstall":     RunFullInstall(); break;
@@ -70,6 +71,7 @@ namespace WowVisionInstaller
                     RunClientTest(); RunTocTest(); RunVersionTest(); RunPathMemoryTest();
                     RunLocTest(); RunLogTest(); RunAvailabilityTest(); RunTextureSweepTest();
                     RunCurseTest(); RunKoLocaleTest(); RunKoVoiceTest(); RunKoLoginToolTest();
+                    KoreanSenseReaderTest.Run(Check);
                     break;
                 default:
                     Console.WriteLine("WowVisionSelfTest commands:");

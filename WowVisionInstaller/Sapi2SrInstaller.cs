@@ -33,7 +33,7 @@ namespace WowVisionInstaller
     {
         // ProgramW6432 / ProgramFiles(x86) are correct regardless of this process's
         // bitness; fall back to SpecialFolder for safety.
-        private static string Dir64 => Path.Combine(
+        internal static string Dir64 => Path.Combine(
             Environment.GetEnvironmentVariable("ProgramW6432")
                 ?? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SAPI2SR");
 
@@ -132,7 +132,7 @@ namespace WowVisionInstaller
             }
         }
 
-        private static void RunSigning(string script, Action<string> announce)
+        internal static void RunSigning(string script, Action<string> announce)
         {
             if (!File.Exists(script)) { Logger.Warning("SAPI2SR: signing script missing from payload."); return; }
             announce(Loc.Get("sapi2sr.signing"));
