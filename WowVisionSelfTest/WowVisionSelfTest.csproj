@@ -58,7 +58,7 @@
     <Compile Include="..\WowVisionInstaller\KoreanLocale.cs"           Link="KoreanLocale.cs" />
     <Compile Include="..\WowVisionInstaller\KoreanVoice.cs"            Link="KoreanVoice.cs" />
     <Compile Include="..\WowVisionInstaller\KoreanLoginTool.cs"        Link="KoreanLoginTool.cs" />
-    <!-- Korean-only features live in the korean submodule (dnz3d4c/wowvision-korean). -->
+    <!-- Korean-only features live in the korean submodule (wowvision-korean repository). -->
     <Compile Include="..\korean\installer\*.cs" LinkBase="korean" />
     </ItemGroup>
 

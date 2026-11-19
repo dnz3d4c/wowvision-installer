@@ -99,7 +99,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Korean-only features live in the korean submodule (dnz3d4c/wowvision-korean);
+    <!-- Korean-only features live in the korean submodule (wowvision-korean repository);
          KoreanSenseReaderTest.cs is the self-test's and stays out of the installer. -->
     <Compile Include="..\korean\installer\*.cs" Exclude="..\korean\installer\*Test.cs" LinkBase="korean" />
   </ItemGroup>
